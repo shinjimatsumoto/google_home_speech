@@ -31,11 +31,24 @@ defalut: ''
 
 ###### local_ip
 
-local ip address of the computer which google_home_speech.py runs on. If this valiable is empty string, auto detection of local ip will be performed.
+local IP address of the computer which google_home_speech.py runs on. If this valiable is empty string, auto detection of local IP will be performed.
+defalut: ''
 
 ###### interface_name
 
-Interface name for local ip detection. If this variable is empty string, first found network interface will be chosen. If your computer is multi-homed host, you may have to set the friendly_name.
+Interface name for local ip detection. If this variable is empty string, first found network interface will be chosen. If your computer is multi-homed host, you may have to set the interface_name.
+defalut: ''
+
+###### language
+
+Language to speak.
+defalut: 'ja'
+
+###### welcome_speech_text
+
+Text spoken at complete of initialization.
+default:'グーグルホームスピーチが起動しました。'
+
 
 ## usage
 
