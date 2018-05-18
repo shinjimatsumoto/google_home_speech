@@ -6,7 +6,7 @@ debug = config.debug
 
 import sys
 
-if debug: sys.stderr.write('initializing...\n')
+if debug : print('initializing...', flush=True, file=sys.stderr)
 
 import os
 import json
@@ -20,6 +20,11 @@ import gtts
 
 media_contoller = None
 speech_filename = 'v.mp3'
+
+def dbgprint(text):
+        if debug:
+                print(text, flush=True, file=sys.stderr)
+
 
 def get_local_ip():
         if config.local_ip:
@@ -35,53 +40,53 @@ def get_local_ip():
                 ipv4_addr = ipv4_addrs[0]['addr']
                 if not ipv4_addr: continue
                 if ipv4_addr.startswith('127.'): continue
-                if debug: sys.stderr.write('local_ip = ' + ipv4_addr + '\n')
+                dbgprint('local_ip = ' + ipv4_addr)
                 return ipv4_addr
-        if debug: sys.stderr.write('failed to get local_ip\n')
+        dbgprint('failed to get local_ip')
         return ''                
 
 
 def discovery_google_home():
-        if debug : sys.stderr.write('Start discovery google home...\n')
+        dbgprint('Start discovery google home...')
         chromecasts = pychromecast.get_chromecasts()
-        if debug : sys.stderr.write(",".join([str(x) for x in chromecasts]) + '\n')
+        dbgprint(",".join([str(x) for x in chromecasts]))
         for cc in chromecasts:
                 if cc.device.friendly_name.startswith(config.friendly_name):
-                        if debug : sys.stderr.write('google home found friendly_name = ' + cc.device.friendly_name + '\n')
+                        dbgprint('google home found friendly_name = ' + cc.device.friendly_name)
                         cast = cc
                         mc = cast.media_controller
                         return mc
-        if debug : sys.stderr.write('No google home found.\n')
+        dbgprint('No google home found.')
         return None
 
 def do_speech(text, language):
         global media_contoller
-        if debug: sys.stderr.write('get speech data for ' + text + '(' + language + ')\n')
+        dbgprint('get speech data for ' + text + '(' + language + ')')
         tts = gtts.gTTS(text = text, lang = language)
         tts.save(speech_filename)
-        if debug: sys.stderr.write('send speech data to google home\n')
+        dbgprint('send speech data to google home')
         if media_contoller is None:
                 media_contoller = discovery_google_home()
         if media_contoller is None:
                 return
         media_url = 'http://' + local_ip + ':' + str(config.listen_port) + '/' + speech_filename
-        if debug: sys.stderr.write('media_url = ' + media_url + '\n')
+        dbgprint('media_url = ' + media_url)
         media_contoller.play_media(media_url, 'audio/mpeg')
 
 
 class JsonResponseHandler(BaseHTTPRequestHandler):
         def do_POST(self):
                 language = config.language 
-                if debug: sys.stderr.write(format(self.headers) + '\n')
+                dbgprint(format(self.headers))
                 content_len = int(self.headers.get('content-length'))
                 requestBody = self.rfile.read(content_len).decode('UTF-8')
-                if debug: sys.stderr.write('requestBody=' + requestBody + '\n')
+                dbgprint('POST requestBody=' + requestBody)
                 try:
                         jsonData = json.loads(requestBody)
-                        if debug: sys.stderr.write('**JSON**\n')
-                        if debug: sys.stderr.write(json.dumps(jsonData, sort_keys=False, indent=4, separators={',', ':'}) + '\n')
+                        dbgprint('**JSON**')
+                        dbgprint(json.dumps(jsonData, sort_keys=False, indent=4, separators={',', ':'}))
                 except:
-                        if debug: sys.stderr.write('faild to decode json\n')
+                        dbgprint('faild to decode json')
                         jsonData = None
 
                 if jsonData is not None and 'language' in jsonData:
@@ -90,7 +95,7 @@ class JsonResponseHandler(BaseHTTPRequestHandler):
                         text = jsonData['text']
                         do_speech(text, language)
                 else:
-                        if debug: sys.stderr.write('no text\n')
+                        dbgprint('no text')
                 self.send_response(200)
                 self.send_header('Content-type', 'text/json')
                 self.end_headers()
@@ -98,11 +103,11 @@ class JsonResponseHandler(BaseHTTPRequestHandler):
 
         def do_GET(self):
                 path = self.path
-                if debug: sys.stderr.write ('GET requested for ' + path  + '\n')
+                dbgprint('GET path = ' + path)
                 filename = path[1:]
 
                 if filename != speech_filename:
-                        if debug: sys.stderr.write('deny GET request for ' + path + '\n')
+                        dbgprint('deny GET request for ' + path)
                         self.send_response(404)
                         self.end_headers()
                         return
@@ -126,14 +131,14 @@ local_ip = get_local_ip()
 media_contoller = discovery_google_home()
 server = HTTPServer(('', config.listen_port), JsonResponseHandler)
 if debug: 
-        sys.stderr.write('HTTP Server is ready\n')
-        sys.stderr.write('\n')
-        sys.stderr.write('examples:\n')
-        sys.stderr.write('curl -X POST -d \'{"text":"test"}\' http://localhost:' + str(config.listen_port)  + '/\n')
-        sys.stderr.write('curl -X POST -d \'{"text":"Hello, this is test.","language":"en"}\' http://localhost:' + str(config.listen_port)  + '/\n')
-        sys.stderr.write('curl -X POST -d \'{"text":"こんにちは","language":"ja"}\' http://localhost:' + str(config.listen_port)  + '/\n')
-        sys.stderr.write('curl -X POST -d \'{"text":"你好","language":"zh-cn"}\' http://localhost:' + str(config.listen_port)  + '/\n')
-        sys.stderr.write('\n')
+        dbgprint('HTTP Server is ready')
+        dbgprint('')
+        dbgprint('examples:')
+        dbgprint('curl -X POST -d \'{"text":"test"}\' http://localhost:' + str(config.listen_port) + '/')
+        dbgprint('curl -X POST -d \'{"text":"Hello, this is test.","language":"en"}\' http://localhost:' + str(config.listen_port)  + '/')
+        dbgprint('curl -X POST -d \'{"text":"こんにちは","language":"ja"}\' http://localhost:' + str(config.listen_port)  + '/')
+        dbgprint('curl -X POST -d \'{"text":"你好","language":"zh-cn"}\' http://localhost:' + str(config.listen_port)  + '/')
+        dbgprint('')
 
 if config.welcome_speech_text: do_speech(config.welcome_speech_text, config.language)
 server.serve_forever()
