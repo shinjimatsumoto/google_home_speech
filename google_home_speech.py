@@ -71,8 +71,17 @@ def do_speech(text, language):
                 return
         media_url = 'http://' + local_ip + ':' + str(config.listen_port) + '/' + speech_filename
         dbgprint('media_url = ' + media_url)
-        media_contoller.play_media(media_url, 'audio/mpeg')
-
+        try:
+                media_contoller.play_media(media_url, 'audio/mpeg')
+        except:
+                dbgprint('media_controller.play_media failed. Try again')
+                media_contoller = discovery_google_home()
+                if media_contoller is None:
+                        return
+                try:
+                        media_contoller.play_media(media_url, 'audio/mpeg')
+                except:
+                        dbgprint('media_controller.play_media failed.')
 
 class JsonResponseHandler(BaseHTTPRequestHandler):
         def do_POST(self):
